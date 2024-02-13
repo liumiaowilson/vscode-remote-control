@@ -67,3 +67,10 @@ Behind each command, there is a gear button. When you click on it, it brings you
 ## Feedback / issues / ideas
 
 Please submit your feedback/issues/ideas by creating an issue in the project repository: [issue list](https://github.com/estruyf/vscode-remote-control/issues).
+
+## How do I generate VSIX?
+1. npm install -g @vscode/vsce
+
+2. npm install
+
+3. vsce package
