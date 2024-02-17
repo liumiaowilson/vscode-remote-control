@@ -68,15 +68,20 @@ const startWebsocketServer = async (
 
   wss.on("connection", (connection: any) => {
     ws = connection;
+    Logger.info('Connection established');
 
     if (ws) {
-      ws.addEventListener("message", (event: MessageEvent) => {
+      ws.addEventListener("message", async (event: MessageEvent) => {
+        Logger.info('Message Received');
+
         if (onlyWhenInFocus && !vscode.window.state.focused) {
-          return;
+          Logger.info('Send reply');
+          return ws?.send(JSON.stringify({ success: false, message: 'NotInFocus' }));
         }
 
-        if (event && event.data && event.data) {
+        if (event && event.data) {
           const wsData: CommandData = JSON.parse(event.data as string);
+          Logger.info('Command Data: ' + JSON.stringify(wsData));
           const args = wsData.args;
 
           if (
@@ -94,16 +99,32 @@ const startWebsocketServer = async (
             if (terminal && args) {
               terminal.show(true);
               terminal.sendText(args);
-              return;
+              Logger.info('Send reply');
+              return ws?.send(JSON.stringify({ success: true }));
             }
-            return;
+
+            Logger.info('Send reply');
+            return ws?.send(JSON.stringify({ success: false, message: 'NoActiveTerminal' }));
+          }
+
+          if(wsData.command === "echo") {
+            Logger.info('Send reply');
+            return ws?.send(JSON.stringify({ success: true, result: args }));
           }
 
           if (args instanceof Array) {
-            vscode.commands.executeCommand(wsData.command, ...args);
+            const result = await vscode.commands.executeCommand(wsData.command, ...args);
+            Logger.info('Send reply');
+            return ws?.send(JSON.stringify({ success: true, result }));
           } else {
-            vscode.commands.executeCommand(wsData.command, args);
+            const result = await vscode.commands.executeCommand(wsData.command, args);
+            Logger.info('Send reply');
+            return ws?.send(JSON.stringify({ success: true, result }));
           }
+        }
+        else {
+          Logger.info('Send reply');
+          return ws?.send(JSON.stringify({ success: false, message: 'NoEventData' }));
         }
       });
     }
